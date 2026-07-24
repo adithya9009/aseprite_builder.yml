@@ -1,0 +1,56 @@
+name: Build Aseprite
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Aseprite source
+      uses: actions/checkout@v4
+      with:
+        repository: 'aseprite/aseprite'
+        ref: 'v1.3.11'
+        submodules: 'recursive'
+
+    - name: Set up Ninja
+      uses: llvm/actions/install-ninja@main
+
+    - name: Set up MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Download Skia Release
+      shell: bash
+      run: |
+        curl -L -o skia.zip https://github.com/aseprite/skia/releases/download/m102-861e4743af/Skia-Windows-Release-x64.zip
+        7z x skia.zip -oskia
+
+    - name: Configure CMake
+      shell: bash
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_UI=ON \
+          -DLAF_BACKEND=skia \
+          -DSKIA_DIR=../skia \
+          -DSKIA_LIBRARY_DIR=../skia/out/Release-x64 \
+          -DSKIA_LIBRARY=../skia/out/Release-x64/skia.lib
+
+    - name: Build Aseprite
+      shell: bash
+      run: |
+        cd build
+        ninja aseprite
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Aseprite-Windows
+        path: build/bin/
+        

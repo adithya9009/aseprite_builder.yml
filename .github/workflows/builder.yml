@@ -1,7 +1,9 @@
-name: Build Aseprite 
+name: Build Aseprite
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ master, main ]
 
 jobs:
   build:
@@ -20,23 +22,26 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: Download Skia Release
+      shell: bash
       run: |
         curl -L -o skia.zip https://github.com/aseprite/skia/releases/download/m102-861e474326/Skia-Windows-Release-x64.zip
         7z x skia.zip -oskia
 
     - name: Configure CMake
+      shell: bash
       run: |
         mkdir build
         cd build
-        cmake .. -G Ninja `
-          -DCMAKE_BUILD_TYPE=Release `
-          -DENABLE_UI=ON `
-          -DLAF_BACKEND=skia `
-          -DSKIA_DIR=../skia `
-          -DSKIA_LIBRARY_DIR=../skia/out/Release-x64 `
+        cmake .. -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_UI=ON \
+          -DLAF_BACKEND=skia \
+          -DSKIA_DIR=../skia \
+          -DSKIA_LIBRARY_DIR=../skia/out/Release-x64 \
           -DSKIA_LIBRARY=../skia/out/Release-x64/skia.lib
 
     - name: Build Aseprite
+      shell: bash
       run: |
         cd build
         ninja aseprite

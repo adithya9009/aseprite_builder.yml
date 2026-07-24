@@ -1,4 +1,4 @@
-name: Build Aseprite
+name: Build Aseprite 
 
 on:
   workflow_dispatch:

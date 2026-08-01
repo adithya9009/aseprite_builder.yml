@@ -45,6 +45,7 @@ jobs:
     - name: Configure CMake
       shell: bash
       run: |
+        SKIA_ABS_PATH="$(pwd)/skia"
         cd aseprite
         mkdir build
         cd build
@@ -52,9 +53,9 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DENABLE_UI=ON \
           -DLAF_BACKEND=skia \
-          -DSKIA_DIR=../../skia \
-          -DSKIA_LIBRARY_DIR=../../skia/out/Release-x64 \
-          -DSKIA_LIBRARY=../../skia/out/Release-x64/skia.lib
+          -DSKIA_DIR="$SKIA_ABS_PATH" \
+          -DSKIA_LIBRARY_DIR="$SKIA_ABS_PATH/out/Release-x64" \
+          -DSKIA_LIBRARY="$SKIA_ABS_PATH/out/Release-x64/skia.lib"
 
     - name: Build Aseprite
       shell: bash

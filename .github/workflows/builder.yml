@@ -33,12 +33,18 @@ jobs:
       shell: bash
       run: |
         mkdir -p skia/modules/skcms
-        find skia -iname "skcms.h" | head -n1 | xargs -I{} cp {} skia/modules/skcms/skcms.h
-        if [ ! -f skia/modules/skcms/skcms.h ]; then
-          echo "skcms.h not found in package, fetching from source commit..."
-          curl -L -o skcms_src.zip "https://github.com/aseprite/skia/archive/8bfa6c67bd8620ebec19c57b7afc5027d9157a7d.zip"
-          7z x skcms_src.zip -oskcms_extract
-          find skcms_extract -path "*/modules/skcms" -type d | head -n1 | xargs -I{} cp -r {}/. skia/modules/skcms/
+        if [ -f skia/modules/skcms/skcms.h ]; then
+          echo "skcms.h already present, nothing to do."
+        else
+          SRC=$(find skia -iname "skcms.h" | grep -v "modules/skcms/skcms.h" | head -n1)
+          if [ -n "$SRC" ]; then
+            cp "$SRC" skia/modules/skcms/skcms.h
+          else
+            echo "skcms.h not found in package, fetching from source commit..."
+            curl -L -o skcms_src.zip "https://github.com/aseprite/skia/archive/8bfa6c67bd8620ebec19c57b7afc5027d9157a7d.zip"
+            7z x skcms_src.zip -oskcms_extract
+            find skcms_extract -path "*/modules/skcms" -type d | head -n1 | xargs -I{} cp -r {}/. skia/modules/skcms/
+          fi
         fi
     - name: Create Skia stub files
       shell: bash

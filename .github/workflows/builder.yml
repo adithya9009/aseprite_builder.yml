@@ -85,7 +85,7 @@ jobs:
       shell: bash
       run: |
         cd aseprite/build
-        ninja aseprite
+        ninja -v aseprite
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

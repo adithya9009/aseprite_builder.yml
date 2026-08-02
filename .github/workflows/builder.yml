@@ -43,6 +43,7 @@ jobs:
           | cut -d '"' -f 4 \
           | xargs curl -L -o skia.zip
         7z x skia.zip -oskia
+        
     - name: Fix missing skcms.h in Skia m124 package
       shell: bash
       run: |
@@ -85,15 +86,12 @@ jobs:
         cd build
         cmake .. -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_IGNORE_PATH='C:/ProgramData/chocolatey/bin/;C:/Strawberry/c/bin/' \
           -DENABLE_UI=ON \
           -DLAF_BACKEND=skia \
           -DSKIA_DIR="$SKIA_ABS_PATH" \
           -DSKIA_LIBRARY_DIR="$SKIA_ABS_PATH/out/Release-x64" \
           -DSKIA_LIBRARY="$SKIA_ABS_PATH/out/Release-x64/skia.lib"
-
-    - name: Confirm Defender status
-      shell: powershell
-      run: Get-MpComputerStatus | Select-Object RealTimeProtectionEnabled
 
     - name: Build Aseprite
       shell: bash

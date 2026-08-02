@@ -26,15 +26,88 @@ jobs:
     - name: Set up MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Fix PATH for Git MSYS tools (gawk, etc.)
-      shell: pwsh
+    - name: Install native gawk (avoid Git MSYS DLL conflicts)
+      shell: powershell
       run: |
-        echo "C:\Program Files\Git\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        choco install gawk -y
+        echo "C:\ProgramData\chocolatey\lib\gawk\tools\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Verify gawk works
       shell: bash
       run: gawk --version
 
+    - name: Download Skia Release
+      shell: bash
+      run: |
+        curl -sL "https://api.github.com/repos/aseprite/skia/releases/tags/m124-08a5439a6b" \
+          | grep "browser_download_url.*Windows.*Release.*x64" \
+          | cut -d '"' -f 4 \
+          | xargs curl -L -o skia.zip
+        7z x skia.zip -oskia
+    - name: Fix missing skcms.h in Skia m124 package
+      shell: bash
+      run: |
+        mkdir -p skia/modules/skcms
+        if [ -f skia/modules/skcms/skcms.h ]; then
+          echo "skcms.h already present, nothing to do."
+        else
+          SRC=$(find skia -iname "skcms.h" | grep -v "modules/skcms/skcms.h" | head -n1)
+          if [ -n "$SRC" ]; then
+            cp "$SRC" skia/modules/skcms/skcms.h
+          else
+            echo "skcms.h not found in package, fetching from source commit..."
+            curl -L -o skcms_src.zip "https://github.com/aseprite/skia/archive/8bfa6c67bd8620ebec19c57b7afc5027d9157a7d.zip"
+            7z x skcms_src.zip -oskcms_extract
+            find skcms_extract -path "*/modules/skcms" -type d | head -n1 | xargs -I{} cp -r {}/. skia/modules/skcms/
+          fi
+        fi
+    - name: Create Skia stub files
+      shell: bash
+      run: |
+        mkdir -p skia/third_party/externals/icu/flutter
+        touch skia/third_party/externals/icu/flutter/icudtl.dat
+        mkdir -p skia/third_party/externals/libjpeg-turbo
+
+    - name: Download Aseprite source
+      shell: bash
+      run: |
+        curl -sL https://api.github.com/repos/aseprite/aseprite/releases/latest \
+          | grep "browser_download_url.*Source.zip" \
+          | cut -d '"' -f 4 \
+          | xargs curl -L -o aseprite-source.zip
+        7z x aseprite-source.zip -oaseprite
+
+    - name: Configure CMake
+      shell: bash
+      run: |
+        SKIA_ABS_PATH="$(pwd)/skia"
+        cd aseprite
+        mkdir build
+        cd build
+        cmake .. -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_IGNORE_PATH='C:/ProgramData/chocolatey/bin/;C:/Strawberry/c/bin/' \
+          -DENABLE_UI=ON \
+          -DLAF_BACKEND=skia \
+          -DSKIA_DIR="$SKIA_ABS_PATH" \
+          -DSKIA_LIBRARY_DIR="$SKIA_ABS_PATH/out/Release-x64" \
+          -DSKIA_LIBRARY="$SKIA_ABS_PATH/out/Release-x64/skia.lib"
+
+    - name: Confirm Defender status
+      shell: powershell
+      run: Get-MpComputerStatus | Select-Object RealTimeProtectionEnabled
+
+    - name: Build Aseprite
+      shell: bash
+      run: |
+        cd aseprite/build
+        stdbuf -oL -eL ninja -v -j2 aseprite
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Aseprite-Windows
+        path: aseprite/build/bin/
     - name: Download Skia Release
       shell: bash
       run: |

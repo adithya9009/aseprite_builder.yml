@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 50
 
     steps:
     - name: Checkout repository
@@ -81,12 +82,16 @@ jobs:
           -DSKIA_LIBRARY_DIR="$SKIA_ABS_PATH/out/Release-x64" \
           -DSKIA_LIBRARY="$SKIA_ABS_PATH/out/Release-x64/skia.lib"
 
+    - name: Confirm Defender status
+      shell: powershell
+      run: Get-MpComputerStatus | Select-Object RealTimeProtectionEnabled
+
     - name: Build Aseprite
       shell: bash
       run: |
         cd aseprite/build
-        ninja -v aseprite
-
+        ninja -v -j2 aseprite
+        
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:

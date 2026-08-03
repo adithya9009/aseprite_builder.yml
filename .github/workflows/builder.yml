@@ -38,4 +38,4 @@ jobs:
         shell: cmd
         run: |
           cd aseprite/build
-          ninja aseprite
+          ninja aseprite      
